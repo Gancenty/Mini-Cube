@@ -7,7 +7,7 @@
 
 // 心知天气HTTP请求所需信息
 String reqUserKey = "S0u-8VQ7vWGcXDVf2"; // 私钥
-String reqLocation = "Shenzhen";         // 城市
+String reqLocation = "Nanchang";         // 城市
 String reqUnit = "c";
 
 String city_name;

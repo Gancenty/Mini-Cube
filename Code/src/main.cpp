@@ -13,9 +13,10 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include "weather.h"
+#include <WiFiManager.h>
 
-char ssid[128] = "Realflight X";
-char password[128] = "12345678";
+char ssid[128] = "Gancenty";
+char password[128] = "20001031";
 bool wifi_config = false;
 
 // Which pin on the Arduino is connected to the NeoPixels?
@@ -42,30 +43,23 @@ Ticker key_scan;
 Ticker led_show;
 
 uint8_t ui_mode = 0;
-#define TIMER_UI 0
-#define TIME_UI 1
-#define DATE_UI 2
-#define WEATHER_UI 3
-#define WEATHER_INFO_UI 4
-#define ABOUT_UI 5
-#define DREAM_UI 6
-#define MAX_UI_CNT 7
+#define TIME_UI 0
+#define DATE_UI 1
+#define WEATHER_UI 2
+#define WEATHER_INFO_UI 3
+#define ABOUT_UI 4
+#define MAX_UI_CNT 5
 
-String project_name = "Realflight X";
-String project_author = "Realflight";
-String project_date = "23-09-17";
-String project_version = "1.0.0";
+String project_name = "Mini-Cube";
+String project_author = "Gancenty";
+String project_date = "24-04-10";
+String project_version = "1.0.1";
 
 const char *week[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 String day_name[] = {"今天", "明天", "后天"};
 //                              1  2  3  4  5  6  7  8  9 10 11 12
 const uint8_t month_table[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 const uint8_t week_table[] = {0, 3, 3, 6, 1, 4, 6, 2, 5, 0, 3, 5};
-
-volatile static uint32_t timer_ms = 0;
-volatile static uint32_t timer_cnt = 0;
-volatile static uint8_t timer_reset = 0;
-volatile static uint8_t timer_start = 0;
 
 uint8_t Is_Leap_Year(uint16_t _year)
 {
@@ -203,120 +197,35 @@ void rainbow_show(void)
   static uint8_t mode = 0;
   static uint8_t dir = 0;
   static uint8_t r = 255, g = 0, b = 0;
-  if (mode == 0)
-  {
+  if(mode == 0){
     switch (dir)
     {
-    case 0:
-      g++;
-      if (g == 255)
-      {
-        dir = 1;
-      }
-      break;
-    case 1:
-      r--;
-      if (r == 0)
-      {
-        dir = 2;
-      }
-      break;
-    case 2:
-      b++;
-      if (b == 255)
-      {
-        dir = 3;
-      }
-      break;
-    case 3:
-      g--;
-      if (g == 0)
-      {
-        dir = 4;
-      }
-      break;
-    case 4:
-      r++;
-      if (r == 150)
-      {
-        mode = 1;
-        dir = 0;
-      }
-      break;
-    default:
-      break;
+      case 0:g++;if (g == 255){dir = 1;} break;
+      case 1:r--;if (r == 0){dir = 2;}break;
+      case 2:b++;if (b == 255){dir = 3;}break;
+      case 3:g--;if (g == 0){dir = 4;}break;
+      case 4:r++;if (r == 150){mode = 1;dir = 0;}break;
+      default:break;
     }
-  }
-  else
-  {
+  }else{
     switch (dir)
     {
-    case 0:
-      r--;
-      if (r == 0)
-      {
-        dir = 1;
-      }
-      break;
-    case 1:
-      g++;
-      if (g == 255)
-      {
-        dir = 2;
-      }
-      break;
-    case 2:
-      b--;
-      if (b == 0)
-      {
-        dir = 3;
-      }
-      break;
-    case 3:
-      r++;
-      if (r == 255)
-      {
-        dir = 4;
-      }
-      break;
-    case 4:
-      g--;
-      if (g == 0)
-      {
-        mode = 0;
-        dir = 0;
-      }
-      break;
-    default:
-      break;
+      case 0:r--;if (r == 0){dir = 1;} break;
+      case 1:g++;if (g == 255){dir = 2;}break;
+      case 2:b--;if (b == 0){dir = 3;}break;
+      case 3:r++;if (r == 255){dir = 4;}break;
+      case 4:g--;if (g == 0){mode = 0;dir = 0;}break;
+      default:break;
     }
   }
-  pixels.setPixelColor(0, pixels.Color(r, g, b));
+  pixels.setPixelColor(0,pixels.Color(r,g,b));
   pixels.show();
 }
 void duty_1ms(void)
 {
-  static uint32_t lms = 0;
   rainbow_show();
-  if (ui_mode == TIMER_UI)
-  {
-    if (timer_start == 1)
-    {
-      uint32_t ms = millis() - lms;
-      lms = millis();
-      timer_cnt += ms;
-      if (timer_cnt >= 99 * 60 * 1000 + 59 * 1000 + 999)
-      {
-        timer_cnt = 0;
-      }
-    }
-    else
-    {
-      lms = millis();
-    }
-  }
 }
-void duty_10ms(void)
+void duty_20ms(void)
 {
   static uint8_t high_cnt = 0;
   static uint8_t long_pressed = 0;
@@ -324,58 +233,22 @@ void duty_10ms(void)
   if (sta == HIGH)
   {
     high_cnt++;
-    if (high_cnt >= 50 && long_pressed == 0)
+    if (high_cnt > 50)
     {
       long_pressed = 1;
       high_cnt = 0;
-      if (ui_mode == TIMER_UI)
-      {
-        if (timer_reset == 0)
-        {
-          timer_cnt = 0;
-          timer_start = 0;
-          timer_reset = 1;
-        }
-        else if (timer_reset == 1)
-        {
-          ui_mode = (ui_mode + 1) % MAX_UI_CNT;
-          timer_reset = 0;
-        }
-      }
       Serial.println("Long Pressed");
     }
   }
   else
   {
-    if (high_cnt > 5 && high_cnt < 50)
+    if (high_cnt > 3 && high_cnt < 25)
     {
-      if (ui_mode != TIMER_UI)
-      {
-        if (long_pressed == 0)
-        {
-          ui_mode = (ui_mode + 1) % MAX_UI_CNT;
-        }
-      }
-      else if (ui_mode == TIMER_UI)
-      {
-        if (long_pressed == 0)
-        {
-          if (timer_start == 1)
-          {
-            timer_start = 0;
-          }
-          else if (timer_start == 0)
-          {
-            timer_start = 1;
-            timer_reset = 0;
-          }
-        }
+      if(long_pressed == 0){
+        ui_mode = (ui_mode + 1) % MAX_UI_CNT;
       }
     }
-
-    if (long_pressed == 1)
-    {
-
+    if(long_pressed == 1){
       long_pressed = 0;
     }
     high_cnt = 0;
@@ -388,69 +261,22 @@ void duty_1s(void)
   {
     lms = millis();
 
-    led_show.detach();
-    key_scan.detach();
     setup_date();
-    key_scan.attach_ms(10, duty_10ms);
-    led_show.attach_ms(1, duty_1ms);
   }
 }
 void duty_5s(void)
 {
   static uint32_t lms = 0;
-  if (millis() - lms >= 60 * 1000)
+  if (millis() - lms >= 5 * 1000)
   {
     lms = millis();
 
-    led_show.detach();
-    key_scan.detach();
     setup_weather();
     timeClient.update();
     setup_date();
-    key_scan.attach_ms(10, duty_10ms);
-    led_show.attach_ms(1, duty_1ms);
   }
 }
-void timer_ui(void)
-{
-  uint8_t str_width = 0;
-  String str[3];
-  u8g2.clearBuffer();
-  u8g2.setFontMode(0);
-  u8g2.setDrawColor(1);
-  u8g2.setFontPosBaseline();
-  u8g2.setFont(u8g2_font_luBIS18_te);
-  if (timer_cnt / 1000 / 60 < 10)
-  {
-    str[0] = '0' + String(timer_cnt / 1000 / 60);
-  }
-  else
-  {
-    str[0] = String(timer_cnt / 1000 / 60);
-  }
-  if ((timer_cnt / 1000) % 60 < 10)
-  {
-    str[1] = '0' + String((timer_cnt / 1000) % 60);
-  }
-  else
-  {
-    str[1] = String((timer_cnt / 1000) % 60);
-  }
-  if (timer_cnt % 1000 / 10 < 10)
-  {
-    str[2] = '0' + String((timer_cnt % 1000) / 10);
-  }
-  else
-  {
-    str[2] = String((timer_cnt % 1000) / 10);
-  }
-  time_data = str[0] + ':' + str[1] + ':' + str[2];
-  str_width = u8g2.getStrWidth(time_data.c_str());
-  u8g2.drawFrame(0, 0, 128, 64);
-  u8g2.setCursor((128 - str_width) / 2, 40);
-  u8g2.print(time_data);
-  u8g2.sendBuffer();
-}
+
 void time_ui(void)
 {
   uint8_t str_width = 0;
@@ -607,31 +433,17 @@ void about_ui(void)
   u8g2.drawGlyph(105, 35, 0x30 + offset);
   u8g2.sendBuffer();
 }
-void dream_ui(void)
-{
-  u8g2.clearBuffer();
-  u8g2.setFontPosTop();
-  u8g2.setDrawColor(1);
-  u8g2.setFont(u8g2_font_wqy13_t_gb2312);
-  u8g2.enableUTF8Print();
-  u8g2.drawUTF8(0, 14, "勤学苦练，");
-  u8g2.setFont(u8g2_font_wqy12_t_gb2312);
-  u8g2.drawUTF8(67, 38, "永不炸机！");
-  u8g2.sendBuffer();
-}
+
 void logo_ui(void)
 {
   u8g2.clearBuffer();
   u8g2.setFontMode(0);
   u8g2.setDrawColor(1);
-  u8g2.setFont(u8g2_font_profont15_mf);
+  u8g2.setFont(u8g2_font_DigitalDisco_tf);
   u8g2.setFontPosBaseline();
   uint8_t width = u8g2.getStrWidth(project_name.c_str());
-  u8g2.setCursor((128 - width) / 2, 35-12);
+  u8g2.setCursor((128 - width) / 2, 35);
   u8g2.print(project_name);
-  u8g2.setFont(u8g2_font_wqy13_t_gb2312);
-  width = u8g2.getUTF8Width("飞飞机的水手");
-  u8g2.drawUTF8((128 - width) / 2, 35+12, "飞飞机的水手");
   u8g2.sendBuffer();
 }
 void wifi_ui(void)
@@ -664,15 +476,17 @@ void wifi_smart_config_ui(void)
   u8g2.setDrawColor(0);
   u8g2.drawXBMP(0, 0, 64, 64, wifi_url);
   u8g2.setDrawColor(1);
-  u8g2.drawUTF8(64 + 10, 20, "打开微信");
-  u8g2.drawUTF8(64 + 10, 36, "扫一扫");
+  u8g2.drawUTF8(64 + 3, 8, "1.连接WIFI");
+  u8g2.drawUTF8(64 + 3, 8+12, "\"Mini-Cube\"");
+  u8g2.drawUTF8(64 + 3, 36, "2.打开微信");
+  u8g2.drawUTF8(64 + 3, 36+12, "扫描二维码");
   u8g2.sendBuffer();
 }
 bool AutoConfig()
 {
-  WiFi.begin(ssid,password);
+  WiFi.begin();
   WiFi.mode(WIFI_STA);
-
+  
   wifi_station_set_hostname(project_name.c_str());
   for (int i = 0; i < 60; i++)
   {
@@ -733,26 +547,30 @@ void setup()
   pixels.setBrightness(5);
   logo_ui();
 
-  delay(5000);
-
+  delay(2000);
+  wifi_smart_config_ui();
   pixels.setPixelColor(0, pixels.Color(255, 0, 0));
   pixels.show();
-  if (!AutoConfig())
-  {
-    SmartConfig();
+  WiFiManager wm;
+  bool res = wm.autoConnect("Mini-Cube");
+  if(!res){
+    ESP.restart();
   }
+  // if (!AutoConfig())
+  // {
+  //   SmartConfig();
+  // }
   pixels.setPixelColor(0, pixels.Color(0, 255, 0));
   pixels.show();
 
   timeClient.begin();
   timeClient.setTimeOffset(8 * 3600);
-  setup_weather();
   while (!timeClient.update())
   {
     delay(500);
     timeClient.update();
   }
-  key_scan.attach_ms(10, duty_10ms);
+  key_scan.attach_ms(20, duty_20ms);
   led_show.attach_ms(1, duty_1ms);
 }
 void loop()
@@ -761,9 +579,6 @@ void loop()
   duty_1s();
   switch (ui_mode)
   {
-  case TIMER_UI:
-    timer_ui();
-    break;
   case TIME_UI:
     time_ui();
     break;
@@ -778,9 +593,6 @@ void loop()
     break;
   case ABOUT_UI:
     about_ui();
-    break;
-  case DREAM_UI:
-    dream_ui();
     break;
   default:
     break;

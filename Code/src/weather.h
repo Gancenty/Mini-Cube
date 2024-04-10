@@ -18,7 +18,6 @@
 #include "./xbm/energy.h"
 #include "./xbm/heart.h"
 #include "./xbm/wifi_code.h"
-#include "./xbm/thanks.h"
 extern String city_name;
 extern String weather_wind_info[3];
 extern String weather_wind_scale[3];
