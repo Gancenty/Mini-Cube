@@ -15,8 +15,8 @@
 #include "weather.h"
 #include <WiFiManager.h>
 
-char ssid[128] = "Gancenty";
-char password[128] = "20001031";
+char ssid[128] = "Mini-Cube";
+char password[128] = "12345678";
 bool wifi_config = false;
 
 // Which pin on the Arduino is connected to the NeoPixels?
