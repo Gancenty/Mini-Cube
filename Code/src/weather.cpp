@@ -19,6 +19,7 @@ String weather_date_now[3];
 String weather_wind_info[3];
 String weather_wind_scale[3];
 int8_t weather_code[2][3];
+String last_update;
 
 void setup_weather(void)
 {
@@ -71,7 +72,7 @@ void weather_httpRequest(void)
   client.stop();
 }
 char jsonString[2048];
-void weather_parseInfo(WiFiClient client)
+bool weather_parseInfo(WiFiClient client)
 {
   String clientString = client.readString();
   Serial.println(clientString);
@@ -86,7 +87,7 @@ void weather_parseInfo(WiFiClient client)
   {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
-    return;
+    return false;
   }
 
   JsonObject results_0 = doc["results"][0];
@@ -142,4 +143,6 @@ void weather_parseInfo(WiFiClient client)
   }
 
   const char *results_0_last_update = results_0["last_update"]; // "2023-05-29T08:00:00+08:00"
+  last_update = results_0_last_update;
+  return true;
 }

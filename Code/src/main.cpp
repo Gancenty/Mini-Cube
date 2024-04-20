@@ -47,8 +47,9 @@ uint8_t ui_mode = 0;
 #define DATE_UI 1
 #define WEATHER_UI 2
 #define WEATHER_INFO_UI 3
-#define ABOUT_UI 4
-#define MAX_UI_CNT 5
+#define NET_UI 4
+#define ABOUT_UI 5
+#define MAX_UI_CNT 6
 
 String project_name = "Mini-Cube";
 String project_author = "Gancenty";
@@ -56,10 +57,10 @@ String project_date = "24-04-10";
 String project_version = "1.0.1";
 
 const char *week[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-String day_name[] = {"今天", "明天", "后天"};
+String  day_name[] = {"今天", "明天", "后天"};
 //                              1  2  3  4  5  6  7  8  9 10 11 12
 const uint8_t month_table[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-const uint8_t week_table[] = {0, 3, 3, 6, 1, 4, 6, 2, 5, 0, 3, 5};
+const uint8_t week_table[]  = {0, 3, 3, 6, 1, 4, 6, 2, 5, 0, 3, 5};
 
 uint8_t Is_Leap_Year(uint16_t _year)
 {
@@ -197,29 +198,34 @@ void rainbow_show(void)
   static uint8_t mode = 0;
   static uint8_t dir = 0;
   static uint8_t r = 255, g = 0, b = 0;
-  if(mode == 0){
-    switch (dir)
-    {
-      case 0:g++;if (g == 255){dir = 1;} break;
-      case 1:r--;if (r == 0){dir = 2;}break;
-      case 2:b++;if (b == 255){dir = 3;}break;
-      case 3:g--;if (g == 0){dir = 4;}break;
-      case 4:r++;if (r == 150){mode = 1;dir = 0;}break;
-      default:break;
+  if(WiFi.isConnected()){
+    if(mode == 0){
+      switch (dir)
+      {
+        case 0:g++;if (g == 255){dir = 1;} break;
+        case 1:r--;if (r == 0){dir = 2;}break;
+        case 2:b++;if (b == 255){dir = 3;}break;
+        case 3:g--;if (g == 0){dir = 4;}break;
+        case 4:r++;if (r == 150){mode = 1;dir = 0;}break;
+        default:break;
+      }
+    }else{
+      switch (dir)
+      {
+        case 0:r--;if (r == 0){dir = 1;} break;
+        case 1:g++;if (g == 255){dir = 2;}break;
+        case 2:b--;if (b == 0){dir = 3;}break;
+        case 3:r++;if (r == 255){dir = 4;}break;
+        case 4:g--;if (g == 0){mode = 0;dir = 0;}break;
+        default:break;
+      }
     }
+    pixels.setPixelColor(0,pixels.Color(r,g,b));
+    pixels.show();
   }else{
-    switch (dir)
-    {
-      case 0:r--;if (r == 0){dir = 1;} break;
-      case 1:g++;if (g == 255){dir = 2;}break;
-      case 2:b--;if (b == 0){dir = 3;}break;
-      case 3:r++;if (r == 255){dir = 4;}break;
-      case 4:g--;if (g == 0){mode = 0;dir = 0;}break;
-      default:break;
-    }
+    pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+    pixels.show();
   }
-  pixels.setPixelColor(0,pixels.Color(r,g,b));
-  pixels.show();
 }
 void duty_1ms(void)
 {
@@ -254,6 +260,16 @@ void duty_20ms(void)
     high_cnt = 0;
   }
 }
+void duty_500ms(void)
+{
+  static uint32_t lms = 0;
+  if (millis() - lms >= 500)
+  {
+    lms = millis();
+
+    setup_date();
+  }
+}
 void duty_1s(void)
 {
   static uint32_t lms = 0;
@@ -261,13 +277,13 @@ void duty_1s(void)
   {
     lms = millis();
 
-    setup_date();
+    
   }
 }
-void duty_5s(void)
+void duty_30s(void)
 {
   static uint32_t lms = 0;
-  if (millis() - lms >= 5 * 1000)
+  if (millis() - lms >= 30 * 1000)
   {
     lms = millis();
 
@@ -393,6 +409,31 @@ void weather_info_ui(void)
     }
     x_pos += 32 + 14;
   }
+  u8g2.sendBuffer();
+}
+void net_ui(void)
+{
+  bool wifi_connected = WiFi.isConnected();
+  u8g2.clearBuffer();
+  u8g2.setFontPosTop();
+  u8g2.setDrawColor(1);
+  u8g2.setFont(u8g2_font_profont15_mf);
+  u8g2.setCursor(0, 0);
+  String wifi_name = "SSID:" + (wifi_connected?WiFi.SSID():"None");
+  u8g2.print(wifi_name);
+
+  u8g2.setCursor(0, 16);
+  String wifi_psk = "PSW:"+ (wifi_connected?WiFi.psk():"None");
+  u8g2.print(wifi_psk);
+
+  u8g2.setCursor(0, 32);
+  String ip_info = "IP:"+ (wifi_connected?WiFi.localIP().toString():"None");
+  u8g2.print(ip_info);
+
+  u8g2.setCursor(0, 48);
+  String weather_update_info = "Latest:"+ (wifi_connected?last_update.substring(0,last_update.indexOf('T')):"None");
+  u8g2.print(weather_update_info);
+
   u8g2.sendBuffer();
 }
 void about_ui(void)
@@ -540,18 +581,20 @@ void setup()
   Serial.begin(115200);
   u8g2.setBusClock(400000);
   u8g2.begin();
-  u8g2.setContrast(20);
+  u8g2.setContrast(2);
+  
   pixels.begin();
-  pixels.clear();
-  pixels.show();
   pixels.setBrightness(5);
+  delay(100);
+  pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+  pixels.show();
+  
   logo_ui();
 
   delay(2000);
   wifi_smart_config_ui();
-  pixels.setPixelColor(0, pixels.Color(255, 0, 0));
-  pixels.show();
   WiFiManager wm;
+  wm.setTimeout(180);
   bool res = wm.autoConnect("Mini-Cube");
   if(!res){
     ESP.restart();
@@ -570,12 +613,14 @@ void setup()
     delay(500);
     timeClient.update();
   }
+  setup_weather();
   key_scan.attach_ms(20, duty_20ms);
   led_show.attach_ms(1, duty_1ms);
 }
 void loop()
 {
-  duty_5s();
+  duty_500ms();
+  duty_30s();
   duty_1s();
   switch (ui_mode)
   {
@@ -590,6 +635,9 @@ void loop()
     break;
   case WEATHER_INFO_UI:
     weather_info_ui();
+    break;
+  case NET_UI:
+    net_ui();
     break;
   case ABOUT_UI:
     about_ui();

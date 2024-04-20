@@ -27,8 +27,9 @@ extern String weather_day_info[3];
 extern String weather_night_info[3];
 extern String weather_date_now[3];
 extern int8_t weather_code[2][3];
+extern String last_update;
 void setup_weather(void);
 void weather_httpRequest(void);
-void weather_parseInfo(WiFiClient client);
+bool weather_parseInfo(WiFiClient client);
 
 #endif
