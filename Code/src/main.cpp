@@ -17,6 +17,7 @@
 
 char ssid[128] = "Mini-Cube";
 char password[128] = "12345678";
+uint8_t brightness = 2;
 bool wifi_config = false;
 
 // Which pin on the Arduino is connected to the NeoPixels?
@@ -243,6 +244,8 @@ void duty_20ms(void)
     {
       long_pressed = 1;
       high_cnt = 0;
+      brightness+=10;
+      u8g2.setContrast(brightness%256);
       Serial.println("Long Pressed");
     }
   }
@@ -467,8 +470,8 @@ void about_ui(void)
   u8g2.print(project_date);
 
   u8g2.setCursor(0, 48);
-  u8g2.print(F("Ver:"));
-  u8g2.print(project_version);
+  u8g2.print(F("Bright:"));
+  u8g2.print(brightness);
 
   u8g2.setFont(u8g2_font_streamline_all_t);
   u8g2.drawGlyph(105, 35, 0x30 + offset);
@@ -581,10 +584,10 @@ void setup()
   Serial.begin(115200);
   u8g2.setBusClock(400000);
   u8g2.begin();
-  u8g2.setContrast(2);
+  u8g2.setContrast(brightness);
   
   pixels.begin();
-  pixels.setBrightness(5);
+  pixels.setBrightness(2);
   delay(100);
   pixels.setPixelColor(0, pixels.Color(255, 0, 0));
   pixels.show();
