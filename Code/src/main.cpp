@@ -18,7 +18,7 @@
 char ssid[128] = "Mini-Cube";
 char password[128] = "12345678";
 uint8_t brightness = 2;
-bool wifi_config = false;
+bool led_status = true;
 
 // Which pin on the Arduino is connected to the NeoPixels?
 #define PIN 12 // On Trinket or Gemma, suggest changing this to 1
@@ -230,7 +230,9 @@ void rainbow_show(void)
 }
 void duty_1ms(void)
 {
-  rainbow_show();
+  if(led_status){
+    rainbow_show();
+  }
 }
 void duty_20ms(void)
 {
@@ -244,9 +246,22 @@ void duty_20ms(void)
     {
       long_pressed = 1;
       high_cnt = 0;
-      brightness+=10;
-      u8g2.setContrast(brightness%256);
-      Serial.println("Long Pressed");
+      if(ui_mode==ABOUT_UI){
+        WiFi.persistent(true);
+        WiFi.disconnect(true);
+        WiFi.persistent(false);
+        ESP.restart();
+      }else if(ui_mode==NET_UI){
+        led_status=!led_status;
+        if(led_status==false){
+          pixels.setPixelColor(0,pixels.Color(0,0,0));
+          pixels.show();
+        }  
+      }else{
+        brightness+=10;
+        u8g2.setContrast(brightness%256);
+        Serial.println("Long Pressed");
+      }
     }
   }
   else
