@@ -18,7 +18,7 @@
 char ssid[128] = "Mini-Cube";
 char password[128] = "12345678";
 uint8_t brightness = 2;
-bool led_status = true;
+bool led_status = false;
 
 // Which pin on the Arduino is connected to the NeoPixels?
 #define PIN 12 // On Trinket or Gemma, suggest changing this to 1
@@ -232,6 +232,9 @@ void duty_1ms(void)
 {
   if(led_status){
     rainbow_show();
+  }else{
+    pixels.setPixelColor(0, pixels.Color(0, 0, 0));
+    pixels.show();
   }
 }
 void duty_20ms(void)
