@@ -18,7 +18,7 @@
 char ssid[128] = "Mini-Cube";
 char password[128] = "12345678";
 uint8_t brightness = 2;
-bool led_status = false;
+bool led_status = true;
 
 // Which pin on the Arduino is connected to the NeoPixels?
 #define PIN 12 // On Trinket or Gemma, suggest changing this to 1
@@ -230,8 +230,11 @@ void rainbow_show(void)
 }
 void duty_1ms(void)
 {
+  static uint16_t hsv = 0;
   if(led_status){
-    rainbow_show();
+      pixels.rainbow(hsv,1,255,255,true);
+      hsv+=1;
+      pixels.show();
   }else{
     pixels.setPixelColor(0, pixels.Color(0, 0, 0));
     pixels.show();
@@ -263,6 +266,7 @@ void duty_20ms(void)
       }else{
         brightness+=10;
         u8g2.setContrast(brightness%256);
+        pixels.setBrightness(brightness%256);
         Serial.println("Long Pressed");
       }
     }
@@ -605,7 +609,7 @@ void setup()
   u8g2.setContrast(brightness);
   
   pixels.begin();
-  pixels.setBrightness(2);
+  pixels.setBrightness(brightness);
   delay(100);
   pixels.setPixelColor(0, pixels.Color(255, 0, 0));
   pixels.show();
